@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item android:id="@+id/grayscale_selection"
+        android:title="@string/grayscale_string"
+        android:icon="@drawable/grayscale_icon"
+        app:showAsAction="always" />
+
+
+    <item android:id="@+id/blur_selection"
+        android:title="@string/blur_string"
+        android:icon="@drawable/blur_icon"
+        app:showAsAction="always" />
+
+    <item android:id="@+id/circle_crop_selection"
+        android:title="@string/circle_crop_string"
+        android:icon="@drawable/circle_crop_icon"
+        app:showAsAction="always" />
+
+
+</menu>

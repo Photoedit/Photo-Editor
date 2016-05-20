@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">braulio00PhotoEditor</string>
+    <string name="photo_editor_string">Photo Editor</string>
+
+    <string name="blur_string">Blur</string>
+    <string name="circle_crop_string">Circle Crop</string>
+    <string name="grayscale_string">Grayscale</string>
+
+    <string name="gallery_string">Gallery</string>
+    <string name="revert_string">Revert</string>
+    <string name="save_string">Save</string>
+    
+</resources>
