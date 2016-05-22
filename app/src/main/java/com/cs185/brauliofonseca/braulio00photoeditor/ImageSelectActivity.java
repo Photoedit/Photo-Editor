@@ -1,6 +1,7 @@
 package com.cs185.brauliofonseca.braulio00photoeditor;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -29,18 +30,25 @@ import com.almeros.android.multitouch.BaseGestureDetector;
 import com.almeros.android.multitouch.MoveGestureDetector;
 import com.almeros.android.multitouch.RotateGestureDetector;
 import com.almeros.android.multitouch.ShoveGestureDetector;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Transformation;
 
 import java.io.File;
+import java.util.Stack;
 
 public class ImageSelectActivity extends AppCompatActivity implements View.OnTouchListener {
 
+    private Context mContext;
     private ImageView image_button;
+    private ImageView holder_view;
     private Toolbar bottomToolbar;
     private Uri selected_image_uri;
+
     public static final int RESULT_GALLERY = 0;
     public static final String DEBUG_GALLERY_CALLBACK = "DEBUG GALLERY CALLBACK";
 
     private Matrix mMatrix = new Matrix();
+    private Stack<String> applied_tranformations;
     private ScaleGestureDetector mScaleDetector;
     private ShoveGestureDetector mShoveDetector;
     private RotateGestureDetector mRotateDetector;
@@ -52,13 +60,14 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
     private float mRotationDegree = 0.f;
     private float mFocusX = 0.f;
     private float mFocusY = 0.f;
-
     private int image_has_been_selected = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_select);
+        applied_tranformations = new Stack<>();
+        mContext = this;
 
         // Setup read and write permission for app
 //        int write_permission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
@@ -102,12 +111,30 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
                 switch (item.getItemId()) {
                     case R.id.grayscale_selection:
                         Log.d(DEBUG_GALLERY_CALLBACK, "Entered grayscale selection");
+                        if (image_has_been_selected == 1) {
+                            Picasso.with(mContext).load(selected_image_uri)
+                                    .transform(new GrayscaleTransformation())
+                                    .into(image_button);
+                            applied_tranformations.push("grayscale");
+                        }
                         return true;
                     case R.id.blur_selection:
                         Log.d(DEBUG_GALLERY_CALLBACK, "Entered blur selection");
+                        if (image_has_been_selected == 1) {
+                            Picasso.with(mContext).load(selected_image_uri)
+                                    .transform(new BlurTransformation(mContext))
+                                    .into(image_button);
+                            applied_tranformations.push("blur");
+                        }
                         return true;
                     case R.id.circle_crop_selection:
                         Log.d(DEBUG_GALLERY_CALLBACK, "Entered circle crop selection");
+                        if (image_has_been_selected == 1) {
+                            Picasso.with(mContext).load(selected_image_uri)
+                                    .transform(new CropCircleTransformation())
+                                    .into(image_button);
+                            applied_tranformations.push("circle_crop");
+                        }
                         return true;
 
                 }
