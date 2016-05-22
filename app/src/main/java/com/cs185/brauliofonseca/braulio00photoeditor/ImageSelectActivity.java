@@ -21,6 +21,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.widget.ActionMenuView;
 import android.widget.ImageButton;
 import android.support.v7.widget.Toolbar;
 import android.widget.ImageView;
@@ -47,10 +48,12 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
     private int mImageHeight;
     private int mImageWidth;
     private int mAlpha = 255;
-    private float mScaleFactor = .4f;
+    private float mScaleFactor = 1.f;
     private float mRotationDegree = 0.f;
     private float mFocusX = 0.f;
     private float mFocusY = 0.f;
+
+    private int image_has_been_selected = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,8 +73,9 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
 
         // Determine the center of the screen to center 'earth'
         Display display = getWindowManager().getDefaultDisplay();
-        mFocusX = display.getWidth()/2f;
-        mFocusY = display.getHeight()/2f;
+        final float screenWidth = display.getWidth();
+        final float screenHeight = display.getHeight();
+
 
 
         // Top toolbar implementation
@@ -81,12 +85,36 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
         // Overwrite functions for the ImageButton view
         image_button = (ImageView) findViewById(R.id.start_image);
         image_button.setImageResource(R.drawable.default_screen);
+//        mImageHeight = image_button.getDrawable().getIntrinsicHeight();
+//        mImageWidth = image_button.getDrawable().getIntrinsicWidth();
+//        final float scale = Math.max(screenHeight/mImageHeight, screenWidth/mImageWidth);
         image_button.setOnTouchListener(this);
+        mMatrix.postScale(mScaleFactor, mScaleFactor);
         image_button.setImageMatrix(mMatrix);
+
 
         // Overwrite functions for the Toolbar
         bottomToolbar = (Toolbar) findViewById(R.id.bottom_bar);
         bottomToolbar.inflateMenu(R.menu.botton_bar_menu);
+        bottomToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.grayscale_selection:
+                        Log.d(DEBUG_GALLERY_CALLBACK, "Entered grayscale selection");
+                        return true;
+                    case R.id.blur_selection:
+                        Log.d(DEBUG_GALLERY_CALLBACK, "Entered blur selection");
+                        return true;
+                    case R.id.circle_crop_selection:
+                        Log.d(DEBUG_GALLERY_CALLBACK, "Entered circle crop selection");
+                        return true;
+
+                }
+                return true;
+            }
+        });
+
 
         // Initialize the motion detector variables
         mScaleDetector = new ScaleGestureDetector(getApplicationContext(), new ScaleListener());
@@ -134,6 +162,7 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
                     // Get the information on the imported image
                     getImageSize(selected_image_uri);
                     image_button.setImageURI(selected_image_uri);
+                    image_has_been_selected = 1;
                     Log.d(DEBUG_GALLERY_CALLBACK, "Reached inner conditional");
 
                 }
@@ -149,8 +178,8 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
         mRotateDetector.onTouchEvent(event);
 
         // View is scaled and translated by matrix, so scale and translate initially
-        float scaledImageCenterX = (mImageWidth*mScaleFactor)/2;
-        float scaledImageCenterY = (mImageHeight*mScaleFactor)/2;
+        float scaledImageCenterX = (mImageWidth*mScaleFactor);
+        float scaledImageCenterY = (mImageHeight*mScaleFactor);
 
 
         mMatrix.reset();
@@ -211,6 +240,7 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
 
     // Function for bringing up the gallery intent
     public void executePhotoGalleryIntent() {
+        image_has_been_selected = 0;
         Intent gallery_intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(gallery_intent, RESULT_GALLERY);
     }
