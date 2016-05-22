@@ -1,2 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<items version="2" />
+<items version="2" >
+
+    <item
+        jar="/Users/pop/AndroidStudioProjects/braulio00PhotoEditor/app/build/intermediates/exploded-aar/braulio00PhotoEditor/library/unspecified/jars/classes.jar"
+        jumboMode="false"
+        revision="23.0.3"
+        sha1="ca9dd09ef133c2f8d6224cc56e7e951ffa2aafe6">
+        <dex dex="/Users/pop/AndroidStudioProjects/braulio00PhotoEditor/app/build/intermediates/pre-dexed/debug/braulio00PhotoEditor-library-unspecified_4b5b2e602bd511ab4958cbff4ba7e10f66230c9e.jar" />
+    </item>
+
+</items>
