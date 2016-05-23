@@ -5,10 +5,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.PointF;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -34,6 +38,11 @@ import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Transformation;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Stack;
 
 public class ImageSelectActivity extends AppCompatActivity implements View.OnTouchListener {
@@ -43,12 +52,16 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
     private ImageView holder_view;
     private Toolbar bottomToolbar;
     private Uri selected_image_uri;
-
     public static final int RESULT_GALLERY = 0;
     public static final String DEBUG_GALLERY_CALLBACK = "DEBUG GALLERY CALLBACK";
+    private int edited_count = 0;
+    private ArrayList<Transformation> transform_applied;
+    private BlurTransformation blur_transform;
+    private GrayscaleTransformation gray_transform;
+    private CropCircleTransformation crop_transform;
+    private int array_list_index = 0;
 
     private Matrix mMatrix = new Matrix();
-    private Stack<String> applied_tranformations;
     private ScaleGestureDetector mScaleDetector;
     private ShoveGestureDetector mShoveDetector;
     private RotateGestureDetector mRotateDetector;
@@ -66,8 +79,12 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_select);
-        applied_tranformations = new Stack<>();
         mContext = this;
+        gray_transform = new GrayscaleTransformation();
+        blur_transform = new BlurTransformation(mContext);
+        crop_transform = new CropCircleTransformation();
+
+
 
         // Setup read and write permission for app
 //        int write_permission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
@@ -112,28 +129,29 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
                     case R.id.grayscale_selection:
                         Log.d(DEBUG_GALLERY_CALLBACK, "Entered grayscale selection");
                         if (image_has_been_selected == 1) {
+                            transform_applied.add(gray_transform);
+                            Iterator<Transformation> iterator = transform_applied.iterator();
                             Picasso.with(mContext).load(selected_image_uri)
-                                    .transform(new GrayscaleTransformation())
+                                    .transform(transform_applied)
                                     .into(image_button);
-                            applied_tranformations.push("grayscale");
                         }
                         return true;
                     case R.id.blur_selection:
                         Log.d(DEBUG_GALLERY_CALLBACK, "Entered blur selection");
                         if (image_has_been_selected == 1) {
+                            transform_applied.add(blur_transform);
                             Picasso.with(mContext).load(selected_image_uri)
-                                    .transform(new BlurTransformation(mContext))
+                                    .transform(transform_applied)
                                     .into(image_button);
-                            applied_tranformations.push("blur");
                         }
                         return true;
                     case R.id.circle_crop_selection:
                         Log.d(DEBUG_GALLERY_CALLBACK, "Entered circle crop selection");
                         if (image_has_been_selected == 1) {
+                            transform_applied.add(crop_transform);
                             Picasso.with(mContext).load(selected_image_uri)
-                                    .transform(new CropCircleTransformation())
+                                    .transform(transform_applied)
                                     .into(image_button);
-                            applied_tranformations.push("circle_crop");
                         }
                         return true;
 
@@ -156,7 +174,6 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.top_bar_menu, menu);
-
         return true;
     }
 
@@ -165,11 +182,15 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
         switch (item.getItemId()) {
             case R.id.gallery_selection:
                 // On selection of gallery button
+                transform_applied = new ArrayList();
+                image_has_been_selected = 0;
                 executePhotoGalleryIntent();
                 return true;
             case R.id.revert_selection:
                 return true;
             case R.id.save_selection:
+                // Save the current ImageView to file system
+                saveCurrentImageView(image_button);
                 return true;
             default:
                 // If we got here, the user's action was not recognized.
@@ -277,9 +298,55 @@ public class ImageSelectActivity extends AppCompatActivity implements View.OnTou
     private void getImageSize(Uri uri) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
+        Log.d(DEBUG_GALLERY_CALLBACK, "Within the getImageSize function");
         BitmapFactory.decodeFile(new File(uri.getPath()).getAbsolutePath(), options);
         mImageHeight = options.outHeight;
         mImageWidth = options.outWidth;
+    }
+
+    // Function to save the current ImageView
+    private void saveCurrentImageView(ImageView imageview) {
+
+        String filename = "PhotoEditor_" + Integer.toString(edited_count);
+        edited_count += 1;
+        String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()+ File.separator + "PhotoEditor";
+        File imageFolder = new File(path);
+        if (!imageFolder.exists()) {
+            Log.d(DEBUG_GALLERY_CALLBACK, "Did not create new folder");
+            imageFolder.mkdirs();
+        }
+
+        File image = null;
+        image = new File(imageFolder,filename);
+        try {
+            image.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(image);
+        } catch (FileNotFoundException e) {
+            Log.d(DEBUG_GALLERY_CALLBACK, "Did not create the output stream");
+            e.printStackTrace();
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(imageview.getWidth(), imageview.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        imageview.draw(canvas);
+        try {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+        } catch (NullPointerException npe) {
+            npe.printStackTrace();
+        }
+        try {
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        bitmap.recycle();
+
     }
 
 }
